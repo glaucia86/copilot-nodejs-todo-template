@@ -1,18 +1,17 @@
 import express from 'express';
 import { Task } from '../models/task';
+import { DbService } from '../services/db';
 
 const router = express.Router();
 
-router.get('/', async function(req, res) {
+router.get('/', async function (req, res) {
   res.json({ message: 'server up' });
 });
 
-router.get('/users/:userId/tasks', async function(req, res) {
+router.get('/users/:userId/tasks', async function (req, res) {
   try {
     const { userId } = req.params;
-
-    // TODO: get tasks from database
-    const tasks: Task[] = [];
+    const tasks: Task[] = await DbService.getInstance().getTasks(userId);
 
     res.json(tasks);
   } catch (error: any) {
@@ -20,7 +19,7 @@ router.get('/users/:userId/tasks', async function(req, res) {
   }
 });
 
-router.post('/users/:userId/tasks', async function(req, res) {
+router.post('/users/:userId/tasks', async function (req, res) {
   try {
     const { userId } = req.params;
     const task = {
@@ -29,7 +28,14 @@ router.post('/users/:userId/tasks', async function(req, res) {
       completed: false
     };
 
-    // TODO: create task in database
+    // Check that the task has a title
+    if (!task.title) {
+      return res.status(400).json({
+        error: 'Task title is required'
+      });
+    }
+
+    await DbService.getInstance().createTask(task);
 
     res.json(task);
   } catch (error: any) {
@@ -37,12 +43,11 @@ router.post('/users/:userId/tasks', async function(req, res) {
   }
 });
 
-router.get('/tasks/:taskId', async function(req, res) {
+router.get('/tasks/:taskId', async function (req, res) {
   try {
     const { taskId } = req.params;
-    
-    // TODO: get task from database
-    const task = {};
+
+    const task = await DbService.getInstance().getTask(taskId);
 
     res.json(task);
   } catch (error: any) {
@@ -50,16 +55,14 @@ router.get('/tasks/:taskId', async function(req, res) {
   }
 });
 
-router.patch('/tasks/:taskId', async function(req, res) {
+router.patch('/tasks/:taskId', async function (req, res) {
   try {
     const { taskId } = req.params;
-    
-    // TODO: get existing task in database
-    const task = {};
+
+    const task = await DbService.getInstance().getTask(taskId);
     task.completed = Boolean(req.body?.completed);
 
-    // TODO: update task in database
-    const updatedTask = {};
+    const updatedTask = await DbService.getInstance().updateTask(task);
 
     res.json(updatedTask);
   } catch (error: any) {
@@ -67,11 +70,10 @@ router.patch('/tasks/:taskId', async function(req, res) {
   }
 });
 
-router.delete('/tasks/:taskId', async function(req, res) {
+router.delete('/tasks/:taskId', async function (req, res) {
   try {
     const { taskId } = req.params;
-    
-    // TODO: delete task in database
+    await DbService.getInstance().deleteTask(taskId);
 
     res.sendStatus(204);
   } catch (error: any) {
